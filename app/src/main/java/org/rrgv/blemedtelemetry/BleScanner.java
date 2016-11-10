@@ -3,6 +3,7 @@ package org.rrgv.blemedtelemetry;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothDevice;
+import android.content.Intent;
 import android.os.Bundle;
 import android.content.Context;
 import android.support.design.widget.FloatingActionButton;
@@ -14,6 +15,7 @@ import android.util.Log;
 import android.util.ArraySet;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.AdapterView;
 import android.widget.ToggleButton;
 import android.widget.Button;
 import android.widget.ListView;
@@ -22,10 +24,13 @@ import android.widget.ArrayAdapter;
 import java.util.ArrayList;
 
 public class BleScanner extends AppCompatActivity {
+    public final static String DEVICE_CONNECTION = "org.rrgv.BLEMedTelemetry.DEVICE_CONNECTION";
+
     private BluetoothAdapter mBluetoothAdapter;
     private ToggleButton mScanButton;
     private ListView mDeviceList;
-    private ArrayList<String> mDeviceArray;
+    private ArrayList<String> mDeviceNameArray;
+    private ArrayList<BluetoothDevice> mDeviceArray;
     private ArrayAdapter<String> mDeviceAdapter;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,11 +54,24 @@ public class BleScanner extends AppCompatActivity {
         mBluetoothAdapter = bluetoothManager.getAdapter();
 
 
-        mDeviceArray = new ArrayList<String>();
+        mDeviceNameArray = new ArrayList<String>();
+        mDeviceArray = new ArrayList<BluetoothDevice>();
         mDeviceAdapter = new ArrayAdapter<String>(this,
-                android.R.layout.simple_list_item_1, mDeviceArray);
+                android.R.layout.simple_list_item_1, mDeviceNameArray);
         mDeviceList = (ListView)findViewById(R.id.ble_list);
         mDeviceList.setAdapter(mDeviceAdapter);
+        mDeviceList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                String selection = (String)mDeviceList.getItemAtPosition(i);
+                Log.d("ble", "SELECTED: "+selection);
+                BluetoothDevice connectee = mDeviceArray.get(i);
+                Log.d("ble", "GOT DEVICE: "+connectee.getName());
+                Intent intent = new Intent(BleScanner.this, BleConnect.class);
+                intent.putExtra(DEVICE_CONNECTION, connectee);
+                startActivity(intent);
+            }
+        });
 
 
         // This is just disgusting. Is there anything the Java way of doing things
@@ -116,8 +134,10 @@ public class BleScanner extends AppCompatActivity {
     void addDevice(final BluetoothDevice device) {
         Log.d("ble", "The device "+device.getAddress()+" is being added.");
         String name = device.getName()+"/"+device.getAddress();
-        if (!mDeviceArray.contains(name))
+        if (!mDeviceNameArray.contains(name)) {
             mDeviceAdapter.add(name);
+            mDeviceArray.add(device);
+        }
     }
 
 
